@@ -8,7 +8,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/employees")
@@ -49,5 +51,15 @@ public class EmployeeController {
     public ResponseEntity<Void> deleteEmployee(@PathVariable Long id) {
         employeeService.deleteEmployee(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/report/count")
+    public ResponseEntity<Map<String, Object>> getEmployeeCountReport() {
+        long total = employeeService.countTotalEmployeesReport();
+        Map<String, Object> res = new HashMap<>();
+        res.put("totalEmployees", total);
+        res.put("cachingDuration", "60 seconds");
+        res.put("description", "Report of total employees cached for 1 minute");
+        return ResponseEntity.ok(res);
     }
 }

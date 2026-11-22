@@ -3,9 +3,22 @@ spring:
     name: employee-management
   profiles:
     active: dev
+  cache:
+    type: caffeine
+    caffeine:
+      spec: expireAfterWrite=60s
 
 server:
   port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
 
 logging:
   pattern:

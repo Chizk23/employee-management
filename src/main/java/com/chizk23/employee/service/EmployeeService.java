@@ -8,6 +8,8 @@ import com.chizk23.employee.repository.DepartmentRepository;
 import com.chizk23.employee.repository.EmployeeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +43,7 @@ public class EmployeeService {
                 });
     }
 
+    @CacheEvict(value = "employeeCountReport", allEntries = true)
     public Employee createEmployee(EmployeeRequestDTO dto) {
         log.info("Creating new employee: name='{}', email='{}'", dto.getName(), dto.getEmail());
         Department department = null;
@@ -63,11 +66,13 @@ public class EmployeeService {
         return saved;
     }
 
+    @CacheEvict(value = "employeeCountReport", allEntries = true)
     public Employee saveEmployeeEntity(Employee employee) {
         log.info("Saving employee entity directly: id={}", employee.getId());
         return employeeRepository.save(employee);
     }
 
+    @CacheEvict(value = "employeeCountReport", allEntries = true)
     public Employee updateEmployee(Long id, EmployeeRequestDTO dto) {
         log.info("Updating employee with id: {}", id);
         Employee emp = getEmployeeById(id);
@@ -87,6 +92,7 @@ public class EmployeeService {
         return updated;
     }
 
+    @CacheEvict(value = "employeeCountReport", allEntries = true)
     public void deleteEmployee(Long id) {
         log.warn("Deleting employee with id: {}", id);
         Employee emp = getEmployeeById(id);
@@ -100,5 +106,11 @@ public class EmployeeService {
             return employeeRepository.findAll();
         }
         return employeeRepository.findByNameContainingIgnoreCaseOrDepartmentNameContainingIgnoreCase(keyword.trim(), keyword.trim());
+    }
+
+    @Cacheable(value = "employeeCountReport")
+    public long countTotalEmployeesReport() {
+        log.info("Computing total employee count directly from DB query (cache miss)...");
+        return employeeRepository.count();
     }
 }
