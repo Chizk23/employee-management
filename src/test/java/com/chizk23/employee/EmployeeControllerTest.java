@@ -2,6 +2,8 @@ package com.chizk23.employee;
 
 import com.chizk23.employee.controller.EmployeeController;
 import com.chizk23.employee.dto.EmployeeRequestDTO;
+import com.chizk23.employee.exception.GlobalExceptionHandler;
+import com.chizk23.employee.exception.ResourceNotFoundException;
 import com.chizk23.employee.model.Department;
 import com.chizk23.employee.model.Employee;
 import com.chizk23.employee.service.EmployeeService;
@@ -10,19 +12,22 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(EmployeeController.class)
+@Import(GlobalExceptionHandler.class)
 public class EmployeeControllerTest {
 
     @Autowired
@@ -46,10 +51,10 @@ public class EmployeeControllerTest {
     }
 
     @Test
-    void testGetEmployeeById() throws Exception {
+    void testGetEmployeeById_Success() throws Exception {
         Department it = new Department(1L, "IT");
         Employee emp = new Employee(1L, "Nguyen Van A", "a@example.com", it, 15000000.0);
-        when(employeeService.getEmployeeById(1L)).thenReturn(Optional.of(emp));
+        when(employeeService.getEmployeeById(1L)).thenReturn(emp);
 
         mockMvc.perform(get("/api/employees/1"))
                 .andExpect(status().isOk())
@@ -58,7 +63,17 @@ public class EmployeeControllerTest {
     }
 
     @Test
-    void testCreateEmployee() throws Exception {
+    void testGetEmployeeById_NotFound() throws Exception {
+        when(employeeService.getEmployeeById(999L)).thenThrow(new ResourceNotFoundException("Employee not found with id: 999"));
+
+        mockMvc.perform(get("/api/employees/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("Employee not found with id: 999"));
+    }
+
+    @Test
+    void testCreateEmployee_Success() throws Exception {
         EmployeeRequestDTO dto = new EmployeeRequestDTO("Le Van C", "c@example.com", 1L, 18000000.0);
         Employee created = new Employee(10L, "Le Van C", "c@example.com", new Department(1L, "IT"), 18000000.0);
         when(employeeService.createEmployee(any())).thenReturn(created);
@@ -72,8 +87,21 @@ public class EmployeeControllerTest {
     }
 
     @Test
-    void testDeleteEmployee() throws Exception {
-        when(employeeService.deleteEmployee(1L)).thenReturn(true);
+    void testCreateEmployee_ValidationError_InvalidEmailAndBlankName() throws Exception {
+        EmployeeRequestDTO invalidDto = new EmployeeRequestDTO("", "not-an-email", 1L, -100.0);
+
+        mockMvc.perform(post("/api/employees")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(invalidDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.validationErrors.name").exists())
+                .andExpect(jsonPath("$.validationErrors.email").exists());
+    }
+
+    @Test
+    void testDeleteEmployee_Success() throws Exception {
+        doNothing().when(employeeService).deleteEmployee(1L);
 
         mockMvc.perform(delete("/api/employees/1"))
                 .andExpect(status().isNoContent());
