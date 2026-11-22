@@ -1,9 +1,21 @@
 package com.chizk23.employee.dto;
 
+import jakarta.validation.constraints.*;
+
 public class EmployeeRequestDTO {
+
+    @NotBlank(message = "Employee name cannot be blank")
+    @Size(min = 2, max = 100, message = "Employee name must be between 2 and 100 characters")
     private String name;
+
+    @NotBlank(message = "Email cannot be blank")
+    @Email(message = "Email must be a valid email address")
     private String email;
+
     private Long departmentId;
+
+    @NotNull(message = "Salary cannot be null")
+    @PositiveOrZero(message = "Salary must be greater than or equal to 0")
     private Double salary;
 
     public EmployeeRequestDTO() {}
