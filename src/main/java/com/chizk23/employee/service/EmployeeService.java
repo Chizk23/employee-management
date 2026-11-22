@@ -1,5 +1,6 @@
 package com.chizk23.employee.service;
 
+import com.chizk23.employee.dto.DepartmentStatisticsDTO;
 import com.chizk23.employee.dto.EmployeeRequestDTO;
 import com.chizk23.employee.exception.ResourceNotFoundException;
 import com.chizk23.employee.model.Department;
@@ -13,7 +14,9 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -111,6 +114,23 @@ public class EmployeeService {
     @Cacheable(value = "employeeCountReport")
     public long countTotalEmployeesReport() {
         log.info("Computing total employee count directly from DB query (cache miss)...");
-        return employeeRepository.count();
+        return employeeRepository.countAllEmployeesTotal();
+    }
+
+    public List<DepartmentStatisticsDTO> getDepartmentStatistics() {
+        log.info("Querying employee count grouped by department");
+        return employeeRepository.countEmployeesByDepartment();
+    }
+
+    public Map<String, Object> getAnalyticsSummary() {
+        Map<String, Object> summary = new HashMap<>();
+        long totalEmployees = employeeRepository.countAllEmployeesTotal();
+        long totalDepartments = departmentRepository.count();
+        List<DepartmentStatisticsDTO> deptStats = employeeRepository.countEmployeesByDepartment();
+
+        summary.put("totalEmployees", totalEmployees);
+        summary.put("totalDepartments", totalDepartments);
+        summary.put("departmentBreakdown", deptStats);
+        return summary;
     }
 }
