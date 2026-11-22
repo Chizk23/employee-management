@@ -1,5 +1,6 @@
 package com.chizk23.employee.controller;
 
+import com.chizk23.employee.dto.EmployeeRequestDTO;
 import com.chizk23.employee.model.Employee;
 import com.chizk23.employee.service.EmployeeService;
 import org.springframework.http.HttpStatus;
@@ -18,7 +19,6 @@ public class EmployeeController {
         this.employeeService = employeeService;
     }
 
-    // GET /api/employees or /api/employees?keyword=IT
     @GetMapping
     public ResponseEntity<List<Employee>> getAllEmployees(@RequestParam(required = false) String keyword) {
         if (keyword != null && !keyword.trim().isEmpty()) {
@@ -27,7 +27,6 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeService.getAllEmployees());
     }
 
-    // GET /api/employees/{id}
     @GetMapping("/{id}")
     public ResponseEntity<Employee> getEmployeeById(@PathVariable Long id) {
         return employeeService.getEmployeeById(id)
@@ -35,10 +34,25 @@ public class EmployeeController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
-    // POST /api/employees
     @PostMapping
-    public ResponseEntity<Employee> createEmployee(@RequestBody Employee employee) {
-        Employee saved = employeeService.createEmployee(employee);
+    public ResponseEntity<Employee> createEmployee(@RequestBody EmployeeRequestDTO requestDTO) {
+        Employee saved = employeeService.createEmployee(requestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Employee> updateEmployee(@PathVariable Long id, @RequestBody EmployeeRequestDTO requestDTO) {
+        return employeeService.updateEmployee(id, requestDTO)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEmployee(@PathVariable Long id) {
+        boolean deleted = employeeService.deleteEmployee(id);
+        if (deleted) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 }
